@@ -161,7 +161,7 @@ void DrawSpriteFromVector(std::string id, Vector2 position, Vector2 size, std::v
     
     Sprite s = GetSpriteFromVector(id, sprites);
     
-    Rectangle src = {0, 0, (float)s.width, (float)s.height};
+    Rectangle src = {0, 0, (float)s.width, (float)((size.y < 0) ? -s.height : s.height)};
     Rectangle dest = {position.x, position.y, size.x, size.y};
     
     DrawTexturePro(s.img, src, dest, {0, 0}, 0, WHITE);

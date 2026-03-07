@@ -23,6 +23,7 @@ std::vector<Sprite> sprites;
 std::vector<Sprite> backgrounds;
 std::vector<GameSound> sounds;
 std::vector<Anim> anims;
+std::vector<Entity> staticEntities;
 
 ErrorHandler errors;
 
@@ -31,6 +32,11 @@ RenderTexture2D screen;
 char officeFrame = 1;
 int lookAngle = 0;
 bool debugMenu = false;
+
+bool usingCam = false;
+bool togglingCam = false;
+
+int tx, ty, th, tw = 0;
 
 int frames = 0;
 
@@ -49,7 +55,6 @@ int main()
     SetTargetFPS(60);
 
     LoadSpritesFromDir("assets/", sprites, backgrounds, errors);
-    // LoadAnimToVector("./assets/office.anim", "office", anims, errors);
     LoadAnimsFromDir("./assets", anims, errors);
 
     rlImGuiSetup(true);
@@ -60,6 +65,11 @@ int main()
     SetRenderSize(SCREENWIDTH, SCREENHEIGHT);
 
     srand(time(0));
+
+    staticEntities.reserve(3);
+    staticEntities.push_back({ 0, {0, 0}, {0, 0}, 0, {0, 0}, nullptr });
+    staticEntities.push_back({ 0, {200, 200}, {50, 50}, 0, {0, 0}, &staticEntities[0].pos });
+    staticEntities.push_back({ 0, {200, 400}, {50, 50}, 0, {0, 0}, &staticEntities[0].pos });
 
     // texture that is rendered to and then scaled
     screen = LoadRenderTexture(SCREENWIDTH, SCREENHEIGHT);
@@ -87,6 +97,22 @@ int WinMain()
     return main();
 }
 
+void UpdateUI()
+{
+    if(checkBoxCollison(MousePositionStandard(), {1, 1}, {280, 620}, {720, 100}))
+    {
+        if(togglingCam == false)
+        {
+            usingCam = !usingCam;
+        }
+        togglingCam = true;
+    }
+    else if(togglingCam == true)
+    {
+        togglingCam = false;
+    }
+}
+
 void Update()
 {
     Vector2 mp = MousePositionStandard();
@@ -106,16 +132,51 @@ void Update()
         lookAngle += 15;
         if(lookAngle > 300)
             lookAngle = 300;
+
     }
+
+    staticEntities[0].pos.x = -320 + lookAngle;
+
+    UpdateUI();
+}
+
+void RenderStaticEntities()
+{
+    for(Entity e : staticEntities)
+    {
+        if(debugMenu) // Debug entity hitbox
+            DrawRectangleLines(((e.parent == nullptr) ? 0 : (*e.parent).x) + e.pos.x, ((e.parent == nullptr) ? 0 : (*e.parent).y) + e.pos.y, e.size.x, e.size.y, RED);
+    }
+}
+
+
+void RenderUI()
+{
+    DrawSpriteFromVector("power5", {20, 670}, {60, 30}, sprites);
+
+    DrawSpriteFromVector("cam", {280, 620}, {720, (float)((usingCam) ? -100 : 100)}, sprites);
+
+    if(usingCam)
+        DrawSpriteFromVector("map", {1080, 520}, {200, 200}, sprites);
 }
 
 void Render()
 {
     BeginTextureMode(screen);
-        ClearBackground(GRAY);
+        ClearBackground(BLACK);
 
-        DrawAnimFromVector("office", {float(-320) + lookAngle, -200}, {1920, 1080}, anims, sprites);
+        if(!usingCam)
+        {
+            DrawAnimFromVector("office", {float(-320) + lookAngle, -200}, {1920, 1080}, anims, sprites);
+        }
+        else
+        {
+            
+        }
 
+        RenderStaticEntities();
+    
+        RenderUI();
     EndTextureMode();
 
     BeginDrawing();
@@ -124,34 +185,35 @@ void Render()
         // draw scaled render texture to screen
         DrawSpriteDirect(screen.texture, {0, 0}, {(float)GetScreenWidth(), (float)GetScreenHeight()});
 
-            rlImGuiBegin();
+        rlImGuiBegin();
 
-                if(debugMenu)
-                {
-                    ImGui::SetNextWindowSize({0, 0});
-                    ImGui::Begin("Debug");
-                    ImGui::Text(std::to_string(officeFrame).c_str());
-                    ImGui::Text(std::to_string(lookAngle).c_str());
-                    ImGui::Text(std::format("{}, {}", MousePositionStandard().x, MousePositionStandard().y).c_str());
-                    ImGui::End();
-                }
+            if(debugMenu)
+            {
+                ImGui::SetNextWindowSize({0, 0});
+                ImGui::Begin("Debug");
+                ImGui::Text(std::to_string(officeFrame).c_str());
+                ImGui::Text(std::to_string(lookAngle).c_str());
+                ImGui::Text(std::format("{}, {}", MousePositionStandard().x, MousePositionStandard().y).c_str());
+                ImGui::Text(std::format("Cam: {}", usingCam).c_str());
+                ImGui::End();
+            }
 
-                // error window
-                if(errors.activeError)
+            // error window
+            if(errors.activeError)
+            {
+                ImGui::SetNextWindowSize({0, 0});
+                if(ImGui::Begin(errors.isFatal ? "Fatal Error" : "Nonfatal Error"))   
                 {
-                    ImGui::SetNextWindowSize({0, 0});
-                    if(ImGui::Begin(errors.isFatal ? "Fatal Error" : "Nonfatal Error"))   
+                    ImGui::TextColored({255, 0, 0, 255}, errors.errorMessage.c_str());
+                    if(ImGui::Button("OK"))
                     {
-                        ImGui::TextColored({255, 0, 0, 255}, errors.errorMessage.c_str());
-                        if(ImGui::Button("OK"))
-                        {
-                                errors.activeError = false;
-                                errors.overridable = true;
-                        }
-
+                            errors.activeError = false;
+                            errors.overridable = true;
                     }
-                    ImGui::End();
+
                 }
-            rlImGuiEnd();
-        EndDrawing();
+                ImGui::End();
+            }
+        rlImGuiEnd();
+    EndDrawing();
 }
