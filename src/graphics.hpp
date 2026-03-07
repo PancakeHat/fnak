@@ -161,21 +161,34 @@ void DrawSpriteFromVector(std::string id, Vector2 position, Vector2 size, std::v
     
     Sprite s = GetSpriteFromVector(id, sprites);
     
-    Rectangle src = {0, 0, (float)s.width, (float)((size.y < 0) ? -s.height : s.height)};
+    Rectangle src = {0, 0, (float)((size.x < 0) ? -s.width : s.width), (float)((size.y < 0) ? -s.height : s.height)};
     Rectangle dest = {position.x, position.y, size.x, size.y};
     
     DrawTexturePro(s.img, src, dest, {0, 0}, 0, WHITE);
 }
 
+void DrawSpriteFromVectorAlpha(std::string id, Vector2 position, Vector2 size, std::vector<Sprite> sprites, unsigned char opacity)
+{
+    if(id == "")
+        return;
+
+    Sprite s = GetSpriteFromVector(id, sprites);
+
+    Rectangle src = {0, 0, (float)s.width, (float)s.height};
+    Rectangle dest = {position.x, position.y, size.x, size.y};
+
+    DrawTexturePro(s.img, src, dest, {0, 0}, 0, Color{opacity, opacity, opacity, opacity});
+}
+
 // anim slop
-void DrawAnimFromVector(std::string id, Vector2 position, Vector2 size, std::vector<Anim>& anims, std::vector<Sprite> sprites)
+void DrawAnimFromVector(std::string id, Vector2 position, Vector2 size, std::vector<Anim>& anims, std::vector<Sprite> sprites, unsigned char alpha)
 {
     if(id == "")
         return;
 
     Anim* a = GetAnimFromVector(id, anims);
     
-    DrawSpriteFromVector(a->frames[a->frame], position, size, sprites);
+    DrawSpriteFromVectorAlpha(a->frames[a->frame], position, size, sprites, alpha);
 
     a->frameCount++;
     if(a->frameCount >= 60)
@@ -211,18 +224,6 @@ void DrawSpriteFromVectorRotation(std::string id, Vector2 position, Vector2 size
     DrawTexturePro(s.img, src, dest, {20, 20}, rotation, WHITE);
 }
 
-void DrawSpriteFromVectorAlpha(std::string id, Vector2 position, Vector2 size, std::vector<Sprite> sprites, unsigned char opacity)
-{
-    if(id == "")
-        return;
-
-    Sprite s = GetSpriteFromVector(id, sprites);
-
-    Rectangle src = {0, 0, (float)s.width, (float)s.height};
-    Rectangle dest = {position.x, position.y, size.x, size.y};
-
-    DrawTexturePro(s.img, src, dest, {0, 0}, 0, Color{opacity, opacity, opacity, opacity});
-}
 
 
 void UnloadSpritesFromVector(std::vector<Sprite>& sprites)

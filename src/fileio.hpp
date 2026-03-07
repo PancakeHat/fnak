@@ -77,6 +77,38 @@ std::string SerializeEntity(Entity entity)
     return std::format("{},{},{},{},{};", entity.type, entity.pos.x, entity.pos.y, entity.size.x, entity.size.y);
 }
 
+void LoadSpritesFromDirMinimal(std::string spriteDir, std::vector<Sprite>& sprites, ErrorHandler& eh)
+{
+    // make path look pretty
+    std::replace( spriteDir.begin(), spriteDir.end(), '\\', '/');
+
+    // check if dirs exist
+    if(!std::filesystem::exists(std::filesystem::path(spriteDir)))
+    {
+        ThrowNewError(std::format("Can't find spirte directory {}", spriteDir), ERROR_FATAL, false, eh); 
+        return;
+    }
+
+    sprites.clear();
+
+    // load all .anim files
+    for(const auto & entry : std::filesystem::directory_iterator("./assets"))
+    {
+        std::string s = entry.path().string();
+        std::replace( s.begin(), s.end(), '\\', '/');
+        if(StringEndsIn(s, ".png"))
+        {
+            std::string id = s;
+            id.erase(id.begin(), id.begin() + 9);
+            id = RemoveFileEnding(id);
+            
+            LoadSpriteToVector(s, id, sprites, eh);
+
+            std::cout << "GAME: Registered sprite " << id << "\n";
+        }
+    }
+}
+
 // loads sprites and backgrounds into their respective lists
 // this is kind of a complicated function because the pack system needs a fallback if the sprite isnt defined
 /* heres an outline of how it works

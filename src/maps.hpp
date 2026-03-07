@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <cmath>
 #include <fstream>
+#include "mouse.hpp"
 
 #pragma once
 
@@ -172,6 +173,11 @@ void renderTiles(std::vector<Tile> tiles, std::vector<Sprite> sprites)
     }
 }
 
+void DrawRectOnEntity(Entity e, Color color)
+{
+    DrawRectangle(((e.parent == nullptr) ? 0 : (*e.parent).x) + e.pos.x, ((e.parent == nullptr) ? 0 : (*e.parent).y) + e.pos.y, e.size.x, e.size.y, color);
+}
+
 void RenderEntities(std::vector<Entity> entities, std::vector<Sprite> sprites)
 {
     for(Entity e : entities)
@@ -287,6 +293,11 @@ bool checkBoxCollison(Vector2 posA, Vector2 sizeA, Vector2 posB, Vector2 sizeB)
         posA.y + sizeA.y > posB.y
     ) { return true; }
     else { return false; }
+}
+
+bool MouseClickingEntity(Entity e)
+{
+    return (checkBoxCollison(MousePositionStandard(), {1, 1}, {((e.parent == nullptr) ? 0 : (*e.parent).x) + e.pos.x, ((e.parent == nullptr) ? 0 : (*e.parent).y) + e.pos.y}, e.size) && IsMouseButtonPressed(0));
 }
 
 bool CheckBoxCircleCollision(Vector2 circleCenter, float circleRadius, Vector2 rectPos, Vector2 rectSize)
