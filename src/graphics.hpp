@@ -116,6 +116,13 @@ void LoadSpriteToVector(std::string fileName, std::string id, std::vector<Sprite
 //     sprites.push_back(sprite);
 // }
 
+void DrawCenteredText(std::string text, Font font, Vector2 pos, float size, float spacing, Color color)
+{
+    Vector2 s = MeasureTextEx(font, text.c_str(), size, spacing);
+
+    DrawTextEx(font, text.c_str(), { pos.x - s.x / 2, pos.y - s.y / 2 }, size, spacing, color);
+}
+
 void DrawOutlinedText(const char *text, int posX, int posY, int fontSize, Color color, int outlineSize, Color outlineColor) {
     DrawText(text, posX - outlineSize, posY - outlineSize, fontSize, outlineColor);
     DrawText(text, posX + outlineSize, posY - outlineSize, fontSize, outlineColor);

@@ -11,12 +11,12 @@ BEGIN
     BLOCK "040904E4"    // English US
     BEGIN
       VALUE "CompanyName", "PancakeHat Games"
-      VALUE "FileDescription", "Created by PancakeHat (www.pancakehat.dev)"
+      VALUE "FileDescription", ""
       VALUE "FileVersion", "1.0.0"
       VALUE "InternalName", "fnak"
       VALUE "LegalCopyright", "(c) 2026 PancakeHat Games"
-      VALUE "OriginalFilename", "Leapform"
-      VALUE "ProductName", "Leapform"
+      VALUE "OriginalFilename", "FNAK"
+      VALUE "ProductName", "FNAK"
       VALUE "ProductVersion", "1.0.0"
     END
   END

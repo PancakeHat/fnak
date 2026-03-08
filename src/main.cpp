@@ -15,6 +15,7 @@
 #include "errors.hpp"
 #include "menu.hpp"
 #include "mouse.hpp"
+#include "ui.hpp"
 
 #define SCREENWIDTH 1280
 #define SCREENHEIGHT 720
@@ -35,14 +36,21 @@ bool debugMenu = false;
 
 bool usingCam = false;
 bool togglingCam = false;
-int camRoom = 0;
+int camRoom = 2;
 int staticLevel = 128;
 int power = 100;
 int gameTime = 360;
+int night = 1;
 
-int aiLevel = 1;
+int aiLevel = 5;
+int attackWindup = 180;
+int moveCooldown = 180;
+int jumpscare = 0;
+int deathTimer = 300;
 
-int location = 2;
+bool dead = false;
+
+int location = 0;
 /*
     classroom - 0
     commons - 1
@@ -64,12 +72,30 @@ bool doorC = false;
 int doorRHeight = 0;
 bool doorR = false;
 
+// buttons
+bool bRetry = false;
+bool bQuitToTitle = false;
+bool bNextNight = false;
+
+// mm buttons
+bool bContinue = false;
+bool bNewGame = false;
+bool bQuitGame = false;
+bool bBack, bNight1, bNight2, bNight3, bNight4, bNight5, bNightmare = false;
+
+int nightsBeaten = 0;
+bool mainMenu = true;
+bool choosingNight = false;
+
 int tx, ty, th, tw = 0;
 
 int frames = 0;
+bool gameRunning = true;
 
 void Update();
 void Render();
+void MainMenu();
+void LoadingScreen();
 
 int main()
 {
@@ -78,23 +104,25 @@ int main()
     SetTraceLogLevel(TraceLogLevel::LOG_ERROR);
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-    InitWindow(SCREENWIDTH, SCREENHEIGHT, "FNAK");
+    InitWindow(SCREENWIDTH, SCREENHEIGHT, "Five Nights at Korniluk's");
     InitAudioDevice();
     SetTargetFPS(60);
 
-    LoadSpritesFromDirMinimal("./assets/", sprites, errors);
-    LoadAnimsFromDir("./assets", anims, errors);
-
+    rlImGuiSetup(true);
+    
+    SetExitKey(-1);
+    
+    SetRenderSize(SCREENWIDTH, SCREENHEIGHT);
+    // texture that is rendered to and then scaled
+    screen = LoadRenderTexture(SCREENWIDTH, SCREENHEIGHT);
+    srand(time(0));
+    
     opensans = LoadFont("./assets/fonts/opensans.ttf");
 
-    rlImGuiSetup(true);
-
-    SetExitKey(-1);
-    EditorInit();
-
-    SetRenderSize(SCREENWIDTH, SCREENHEIGHT);
-
-    srand(time(0));
+    LoadingScreen();
+    
+    LoadSpritesFromDirMinimal("./assets/", sprites, errors);
+    LoadAnimsFromDir("./assets", anims, errors);
 
     staticEntities.reserve(7);
     staticEntities.push_back({ 0, {0, 0}, {0, 0}, 0, {0, 0}, nullptr });
@@ -107,13 +135,17 @@ int main()
     staticEntities.push_back({ 0, {1754, 298}, {34, 62}, 0, {0, 0}, &staticEntities[0].pos });
     staticEntities.push_back({ 0, {1754, 374}, {34, 62}, 0, {0, 0}, &staticEntities[0].pos });
 
-    // texture that is rendered to and then scaled
-    screen = LoadRenderTexture(SCREENWIDTH, SCREENHEIGHT);
-
-    while(!WindowShouldClose())
+    while(!WindowShouldClose() && gameRunning)
     {
-        Update();
-        Render();
+        if(!mainMenu)
+        {
+            Update();
+            Render();
+        }
+        else
+        {
+            MainMenu();
+        }
 
         frames++;
     }
@@ -133,11 +165,101 @@ int WinMain()
     return main();
 }
 
+void LoadingScreen()
+{
+    BeginTextureMode(screen);
+        ClearBackground(BLACK);
+        DrawCenteredText("Loading...", opensans, {640, 360}, 60, 3, WHITE);
+    EndTextureMode();
+
+    BeginDrawing();
+        DrawSpriteDirect(screen.texture, {0, 0}, {(float)GetScreenWidth(), (float)GetScreenHeight()});
+    EndDrawing();
+}
+
+void ContinueNight()
+{
+
+}
+
+void StartNight(int newNight)
+{
+    night = newNight;
+    aiLevel = newNight;
+    doorL = false;
+    doorR = false;
+    doorC = false;
+    power = 100;
+    gameTime = 360;
+    dead = false;
+    deathTimer = 300;
+    jumpscare = 0;
+    attackWindup = 180;
+    usingCam = false;
+    togglingCam = false;
+    camRoom = 2;
+    lookAngle = 0;
+    location = 2;
+    mainMenu = false;
+}
+
+void ChooseNightBack()
+{
+    choosingNight = false;
+}
+
+void NewGame()
+{
+    choosingNight = true;
+}
+
+void Quit()
+{
+    gameRunning = false;
+}
+
+void MainMenu()
+{
+    BeginTextureMode(screen);
+        ClearBackground(BLACK);
+
+        DrawAnimFromVector("noise", {0, 0}, {1280, 720}, anims, sprites, 128);
+
+        if(choosingNight == false)
+        {
+            DrawTextEx(opensans, "Five Nights", {10, 10}, 70, 3, WHITE);
+            DrawTextEx(opensans, "at Korniluk's", {10, 75}, 70, 3, WHITE);
+    
+            RenderTextButtonAllowed(opensans, {10, 180}, 60, 3, "Continue", ">Continue", ContinueNight, bContinue, false);
+            RenderTextButton(opensans, {10, 240}, 60, 3, "New Game", ">New Game", NewGame, bNewGame);
+            RenderTextButton(opensans, {10, 300}, 60, 3, "Quit", ">Quit", Quit, bQuitGame);
+        }
+        else
+        {
+            DrawTextEx(opensans, "Choose Night", {10, 10}, 70, 3, WHITE);
+    
+            RenderTextButton(opensans, {10, 180}, 60, 3, "Back", ">Back", ChooseNightBack, bBack);
+            RenderTextButtonAllowed1i(opensans, {10, 240}, 60, 3, "Night 1", ">Night 1", StartNight, 1, bNight1, true);
+            RenderTextButtonAllowed1i(opensans, {10, 300}, 60, 3, "Night 2", ">Night 2", StartNight, 2, bNight2, (nightsBeaten > 0));
+            RenderTextButtonAllowed1i(opensans, {10, 360}, 60, 3, "Night 3", ">Night 3", StartNight, 3, bNight3, (nightsBeaten > 1));
+            RenderTextButtonAllowed1i(opensans, {10, 420}, 60, 3, "Night 4", ">Night 4", StartNight, 4, bNight4, (nightsBeaten > 2));
+            RenderTextButtonAllowed1i(opensans, {10, 480}, 60, 3, "Night 5", ">Night 5", StartNight, 5, bNight5, (nightsBeaten > 3));
+            RenderTextButtonAllowed1i(opensans, {10, 540}, 60, 3, "Nightmare", ">Nightmare", StartNight, 6, bNightmare, (nightsBeaten > 4));
+        }
+
+    EndTextureMode();
+
+    BeginDrawing();
+        ClearBackground(BLACK);
+        DrawSpriteDirect(screen.texture, {0, 0}, {(float)GetScreenWidth(), (float)GetScreenHeight()});
+    EndDrawing();
+}
+
 void UpdateUI()
 {
     if(checkBoxCollison(MousePositionStandard(), {1, 1}, {280, 620}, {720, 100}) && power > 0)
     {
-        if(togglingCam == false)
+        if(togglingCam == false && !dead && power > 0)
         {
             usingCam = !usingCam;
         }
@@ -173,15 +295,58 @@ void UpdateUI()
 
 void AIMove(int newLocation)
 {
+    if(newLocation == 7 && !usingCam)
+        return;
+
+    if(newLocation == 6 && lookAngle > 30 && !usingCam)
+        newLocation = 8;
+
+    if(newLocation == 8 && lookAngle < -30 && !usingCam)
+        newLocation = 6;
+
     if(camRoom == newLocation || camRoom == location)
         staticLevel = 255;
 
     location = newLocation;
+    moveCooldown = 60;
+}
+
+void AIAttack()
+{
+    if(location == 6 && doorL == true)
+        return;
+    if(location == 7 && doorC == true)
+        return;
+    if(location == 8 && doorR == true)
+        return;
+
+    dead = true;
+    usingCam = false;
 }
 
 void UpdateAI()
 {
-    if(frames % 420 == 0 && frames != 0)
+    if(dead && jumpscare < 30)
+        jumpscare += 5;
+
+    if(dead && deathTimer > 0)
+        deathTimer--;
+
+    if(location == 6 || location == 7 || location == 8)
+    {
+        if(attackWindup > 0)
+            attackWindup--;
+        
+        if(attackWindup <= 0)
+        {
+            AIAttack();
+        }
+    }
+
+    if(moveCooldown > 0)
+        moveCooldown--;
+
+    if(frames % 300 == 0 && frames != 0 && moveCooldown == 0)
     {
         if(location == 2)
         {
@@ -208,7 +373,7 @@ void UpdateAI()
         }
         else if(location == 1)
         {
-            int choice = GetRandomValue(0, 7 - aiLevel);
+            int choice = GetRandomValue(0, 8 - aiLevel);
 
             if(choice == 0)
             {
@@ -219,8 +384,84 @@ void UpdateAI()
             }
             else if(choice == 1)
                 AIMove(0);
-            else if(choice == 3)
+            else if(choice == 2)
                 AIMove(4);
+            else if(choice == 3 && aiLevel >= 3)
+                AIMove(7);
+        }
+        else if(location == 0)
+        {
+            int choice = GetRandomValue(0, 6 - aiLevel);
+
+            if(choice == 0)
+            {
+                if(aiLevel <= 3)
+                    AIMove(1);
+                else
+                    AIMove(6);
+            }
+            else if(choice == 1)
+                AIMove(6);
+        }
+        else if(location == 4)
+        {
+            int choice = GetRandomValue(0, 8 - aiLevel);
+
+            if(choice == 0)
+            {
+                if(aiLevel <= 3)
+                    AIMove(3);
+                else
+                    AIMove((GetRandomValue(0, 1) == 0) ? 8 : 7);
+            }
+            else if(choice == 1)
+            {
+                if(aiLevel <= 3)
+                    AIMove(1);
+                else
+                    AIMove(8);
+            }
+            else if(choice == 2)
+                AIMove(8);
+            else if(choice == 3 && aiLevel >= 3)
+                AIMove(7);
+            
+        }
+        else if(location == 6)
+        {
+            if(attackWindup <= 0 && doorL == true)
+            {
+                if(aiLevel < 5)
+                    AIMove(2);
+                else
+                    AIMove((GetRandomValue(0, 1) == 0) ? 0 : 1);
+
+                attackWindup = 120;
+            }
+        }
+        else if(location == 7)
+        {
+            if(attackWindup <= 0 && doorC == true)
+            {
+                if(aiLevel < 5)
+                    AIMove(2);
+                else
+                    AIMove(1);
+                    
+                attackWindup = 120;
+            }
+        }
+        else if(location == 8)
+        {
+            if(attackWindup <= 0 && doorR == true)
+            {
+                if(aiLevel < 5)
+                    AIMove((GetRandomValue(0, 1) == 0) ? 2 : 3);
+                else
+                    AIMove(4);
+                    
+                attackWindup = 120;
+            }
         }
     }
 }
@@ -233,7 +474,7 @@ void Update()
         debugMenu = !debugMenu;
 
     // looking controls
-    if(!usingCam)
+    if(!usingCam && !dead)
     {
         if(mp.x >= 1080 && lookAngle >= -300)
         {
@@ -260,12 +501,22 @@ void Update()
             staticLevel = 128;
     }
 
-    // power reduction
-    if(frames % 300 == 0 && frames != 0)
+    if(frames % 30 == 0 && frames != 0 && !dead)
     {
         if(gameTime > 0)
             gameTime -= 10;
-        
+
+        if(gameTime == 0)
+        {
+            dead = true;
+            deathTimer = 0;
+            nightsBeaten++;
+        }
+    }
+
+    // power reduction
+    if(frames % 300 == 0 && frames != 0 && !dead)
+    {   
         if(power > 0)
         {
             if(usingCam)
@@ -294,7 +545,7 @@ void Update()
     staticEntities[0].pos.x = -320 + lookAngle;
 
     // door buttons
-    if(!usingCam && power > 0)
+    if(!usingCam && power > 0 && !dead)
     {
         if(MouseClickingEntity(staticEntities[1])) { doorL = false; }
         if(MouseClickingEntity(staticEntities[2])) { doorL = true; }
@@ -368,32 +619,50 @@ void RenderDoorDebug()
 
 void RenderUI()
 {
-    DrawSpriteFromVector("power" + std::to_string((int)ceil(((float)power / 20))), {20, 650}, {100, 50}, sprites);
-    DrawTextEx(opensans, std::format("{}%", power).c_str(), {130, 645}, 50, 2, WHITE);
-    
-    // timeslop
-    DrawTextEx(opensans, std::format("{:02d}:{:02d}", ((gameTime > 300) ? 12 : (int)(6 - ceil(gameTime / 60)) - ((gameTime % 60 == 0) ? 0 : 1)), ((gameTime % 60 == 0) ? 0 : (60 - (int)(gameTime % 60)))).c_str(), {10, 10}, 50, 2, WHITE);
-
-    DrawSpriteFromVector("cam", {280, 620}, {720, (float)((usingCam) ? -100 : 100)}, sprites);
-
-    if(usingCam)
+    if(deathTimer > 255)
     {
-        DrawSpriteFromVector("map", {1080, 520}, {200, 200}, sprites);
-
-        if(camRoom == 0)
-            DrawRectangle(1098, 661, 29, 31, {200, 200, 0, 128});
-        else if(camRoom == 1)
-            DrawRectangle(1096, 617, 65, 28, {200, 200, 0, 128});
-        else if(camRoom == 2)
-            DrawRectangle(1098, 540, 86, 60, {200, 200, 0, 128});
-        else if(camRoom == 3)
-            DrawRectangle(1218, 556, 32, 44, {200, 200, 0, 128});
-        else if (camRoom == 4)
-            DrawRectangle(1218, 626, 32, 67, {200, 200, 0, 128});
+        DrawSpriteFromVector("power" + std::to_string((int)ceil(((float)power / 20))), {20, 650}, {100, 50}, sprites);
+        DrawTextEx(opensans, std::format("{}%", power).c_str(), {130, 645}, 50, 2, WHITE);
+        
+        // timeslop
+        DrawTextEx(opensans, std::format("{:02d}:{:02d}", ((gameTime > 300) ? 12 : (int)(6 - ceil(gameTime / 60)) - ((gameTime % 60 == 0) ? 0 : 1)), ((gameTime % 60 == 0) ? 0 : (60 - (int)(gameTime % 60)))).c_str(), {10, 10}, 50, 2, WHITE);
+    
+        DrawSpriteFromVector("cam", {280, 620}, {720, (float)((usingCam) ? -100 : 100)}, sprites);
+    
+        if(usingCam)
+        {
+            DrawSpriteFromVector("map", {1080, 520}, {200, 200}, sprites);
+    
+            if(camRoom == 0)
+                DrawRectangle(1098, 661, 29, 31, {200, 200, 0, 128});
+            else if(camRoom == 1)
+                DrawRectangle(1096, 617, 65, 28, {200, 200, 0, 128});
+            else if(camRoom == 2)
+                DrawRectangle(1098, 540, 86, 60, {200, 200, 0, 128});
+            else if(camRoom == 3)
+                DrawRectangle(1218, 556, 32, 44, {200, 200, 0, 128});
+            else if (camRoom == 4)
+                DrawRectangle(1218, 626, 32, 67, {200, 200, 0, 128});
+        }
+    
+        if(debugMenu)
+            DrawRectangle(tx, ty, tw, th, { 255, 0, 0, 200 });
     }
+}
 
-    if(debugMenu)
-        DrawRectangle(tx, ty, tw, th, { 255, 0, 0, 200 });
+void RetryNight()
+{
+    StartNight(night);
+}
+
+void NextNight()
+{
+    StartNight(night + 1);
+}
+
+void QuitToTitle()
+{
+    mainMenu = true;
 }
 
 void Render()
@@ -401,47 +670,73 @@ void Render()
     BeginTextureMode(screen);
         ClearBackground(BLACK);
 
-        if(!usingCam)
+        if(deathTimer > 255)
         {
-
-            DrawSpriteFromVector((power > 0) ? "hall" : "halldark", {float(-320) + lookAngle, -200}, {1920, 1080}, sprites);
-            RenderEnemyOffice();
-            RenderDoors();
-            DrawAnimFromVector((power > 0) ? "office" : "officedark", {float(-320) + lookAngle, -200}, {1920, 1080}, anims, sprites, 255);
-            
-            //door buttons
-            if(power > 0)
+            if(!usingCam)
             {
-                if(doorL)
-                    DrawRectOnEntity(staticEntities[2], {255, 100, 100, 180});
-                else
-                    DrawRectOnEntity(staticEntities[1], {100, 255, 100, 140});
+    
+                DrawSpriteFromVector((power > 0) ? "hall" : "halldark", {float(-320) + lookAngle, -200}, {1920, 1080}, sprites);
+    
+                if(!dead)
+                    RenderEnemyOffice();
+    
+                RenderDoors();
+                DrawAnimFromVector((power > 0) ? "office" : "officedark", {float(-320) + lookAngle, -200}, {1920, 1080}, anims, sprites, 255);
                 
-                if(doorC)
-                    DrawRectOnEntity(staticEntities[4], {255, 100, 100, 180});
-                else
-                    DrawRectOnEntity(staticEntities[3], {100, 255, 100, 140});
-                
-                if(doorR)
-                    DrawRectOnEntity(staticEntities[6], {255, 100, 100, 180});
-                else
-                    DrawRectOnEntity(staticEntities[5], {100, 255, 100, 140});
+                //door buttons
+                if(power > 0)
+                {
+                    if(doorL)
+                        DrawRectOnEntity(staticEntities[2], {255, 100, 100, 180});
+                    else
+                        DrawRectOnEntity(staticEntities[1], {100, 255, 100, 140});
+                    
+                    if(doorC)
+                        DrawRectOnEntity(staticEntities[4], {255, 100, 100, 180});
+                    else
+                        DrawRectOnEntity(staticEntities[3], {100, 255, 100, 140});
+                    
+                    if(doorR)
+                        DrawRectOnEntity(staticEntities[6], {255, 100, 100, 180});
+                    else
+                        DrawRectOnEntity(staticEntities[5], {100, 255, 100, 140});
+                }
             }
+            else
+            {
+                if(camRoom == 0)
+                    DrawSpriteFromVector((location == 0) ? "classroom1" : "classroom", {0, 0}, {1280, 720}, sprites);
+                else if(camRoom == 1)
+                    DrawSpriteFromVector((location == 1) ? "hallway1" : "hallway", {0, 0}, {1280, 720}, sprites);
+                else if(camRoom == 2)
+                    DrawSpriteFromVector((location == 2) ? "cafeteria1" : "cafeteria", {0, 0}, {1280, 720}, sprites);
+                else if(camRoom == 3)
+                    DrawSpriteFromVector((location == 3) ? "commons1" : "commons", {0, 0}, {1280, 720}, sprites);
+                else if(camRoom == 4)
+                    DrawSpriteFromVector((location == 4) ? "staircase1" : "staircase", {0, 0}, {1280, 720}, sprites);
+                
+                DrawAnimFromVector("noise", {0, 0}, {1280, 720}, anims, sprites, staticLevel);
+            }
+    
+            DrawSpriteFromVector("attack", {380 + (float)(5 * sin(frames * jumpscare)), 720 - (20 * (float)jumpscare)}, {600, 600}, sprites);
         }
-        else
+
+        if(deathTimer <= 255)
         {
-            if(camRoom == 0)
-                DrawSpriteFromVector((location == 0) ? "classroom1" : "classroom", {0, 0}, {1280, 720}, sprites);
-            else if(camRoom == 1)
-                DrawSpriteFromVector((location == 1) ? "hallway1" : "hallway", {0, 0}, {1280, 720}, sprites);
-            else if(camRoom == 2)
-                DrawSpriteFromVector((location == 2) ? "cafeteria1" : "cafeteria", {0, 0}, {1280, 720}, sprites);
-            else if(camRoom == 3)
-                DrawSpriteFromVector((location == 3) ? "commons1" : "commons", {0, 0}, {1280, 720}, sprites);
-            else if(camRoom == 4)
-                DrawSpriteFromVector((location == 4) ? "staircase1" : "staircase", {0, 0}, {1280, 720}, sprites);
-            
-            DrawAnimFromVector("noise", {0, 0}, {1280, 720}, anims, sprites, staticLevel);
+            if(deathTimer > 0)
+                DrawAnimFromVector("noise", {0, 0}, {1280, 720}, anims, sprites, (deathTimer));
+
+            if(gameTime > 0)
+                DrawCenteredText("You Died", opensans, { 640, 330 }, 100, 3, WHITE);
+            else
+                DrawCenteredText("6:00 AM", opensans, { 640, 330 }, 100, 3, WHITE);
+
+            if(gameTime > 0)
+                RenderTextButtonCentered(opensans, {640, 450}, 60, 3, "Retry Night", ">Retry Night", RetryNight, bRetry);
+            else if(gameTime <= 0 && night < 5)
+                RenderTextButtonCentered(opensans, {640, 450}, 60, 3, "Next Night", ">Next Night", NextNight, bNextNight);
+
+            RenderTextButtonCentered(opensans, {640, 510}, 60, 3, "Quit to Title", ">Quit to Title", QuitToTitle, bQuitToTitle);
         }
         
         if(debugMenu)
@@ -474,6 +769,9 @@ void Render()
                 ImGui::Text(std::format("Game time: {}", gameTime).c_str());
                 ImGui::Text(std::format("Location: {}", location).c_str());
                 ImGui::Text(std::format("AI Level: {}", aiLevel).c_str());
+                ImGui::Text(std::format("Move Cooldown: {}", moveCooldown).c_str());
+                ImGui::Text(std::format("Attack Windup: {}", attackWindup).c_str());
+                ImGui::Text(std::format("Night: {}", night).c_str());
 
                 // ImGui::SliderInt("X", &tx, 0, 1280);
                 // ImGui::SliderInt("Y", &ty, 0, 720);
