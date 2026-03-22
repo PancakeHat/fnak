@@ -21,7 +21,7 @@
 #define SCREENHEIGHT 720
 
 std::vector<Sprite> sprites;
-std::vector<Sprite> backgrounds;
+// std::vector<Sprite> backgrounds;
 std::vector<GameSound> sounds;
 std::vector<Anim> anims;
 std::vector<Entity> staticEntities;
@@ -50,7 +50,7 @@ int deathTimer = 300;
 
 bool dead = false;
 
-int location = 0;
+int location = 2;
 /*
     classroom - 0
     commons - 1
@@ -63,6 +63,8 @@ int location = 0;
     right door - 8
 */
 
+Color globalTint = WHITE;
+
 int doorLHeight = 0;
 bool doorL = false;
 
@@ -71,6 +73,8 @@ bool doorC = false;
 
 int doorRHeight = 0;
 bool doorR = false;
+
+float masterVolume = 0.7f;
 
 // buttons
 bool bRetry = false;
@@ -86,6 +90,8 @@ bool bBack, bNight1, bNight2, bNight3, bNight4, bNight5, bNightmare = false;
 int nightsBeaten = 0;
 bool mainMenu = true;
 bool choosingNight = false;
+int save = 1;
+bool saveFile = false;
 
 int tx, ty, th, tw = 0;
 
@@ -122,7 +128,8 @@ int main()
     LoadingScreen();
     
     LoadSpritesFromDirMinimal("./assets/", sprites, errors);
-    LoadAnimsFromDir("./assets", anims, errors);
+    LoadAnimsFromDir("./assets/", anims, errors);
+    LoadSoundsFromDirMinimal("./assets/sounds/", sounds, errors);
 
     staticEntities.reserve(7);
     staticEntities.push_back({ 0, {0, 0}, {0, 0}, 0, {0, 0}, nullptr });
@@ -134,6 +141,10 @@ int main()
     staticEntities.push_back({ 0, {1184, 219}, {48, 48}, 0, {0, 0}, &staticEntities[0].pos });
     staticEntities.push_back({ 0, {1754, 298}, {34, 62}, 0, {0, 0}, &staticEntities[0].pos });
     staticEntities.push_back({ 0, {1754, 374}, {34, 62}, 0, {0, 0}, &staticEntities[0].pos });
+
+    saveFile = LoadGameFromFile("save.txt", nightsBeaten, save);
+
+    SetVectorSoundVolume("ambience", (usingCam) ? 0.15f : 0.3f, masterVolume, sounds);
 
     while(!WindowShouldClose() && gameRunning)
     {
@@ -153,7 +164,6 @@ int main()
     CloseAudioDevice();
     CloseWindow();
     UnloadSpritesFromVector(sprites);
-    UnloadSpritesFromVector(backgrounds);
     UnloadSoundsFromVector(sounds);
     rlImGuiShutdown();
     std::cout << "GAME: Shutting down\n";
@@ -177,11 +187,6 @@ void LoadingScreen()
     EndDrawing();
 }
 
-void ContinueNight()
-{
-
-}
-
 void StartNight(int newNight)
 {
     night = newNight;
@@ -201,6 +206,18 @@ void StartNight(int newNight)
     lookAngle = 0;
     location = 2;
     mainMenu = false;
+    save = newNight;
+    
+    SaveGameToFile("save.txt", nightsBeaten, save);
+    saveFile = true;
+    
+    if(night == 6)
+    globalTint = { 70, 70, 100, 255 };
+}
+
+void ContinueNight()
+{
+    StartNight(save);
 }
 
 void ChooseNightBack()
@@ -230,7 +247,7 @@ void MainMenu()
             DrawTextEx(opensans, "Five Nights", {10, 10}, 70, 3, WHITE);
             DrawTextEx(opensans, "at Korniluk's", {10, 75}, 70, 3, WHITE);
     
-            RenderTextButtonAllowed(opensans, {10, 180}, 60, 3, "Continue", ">Continue", ContinueNight, bContinue, false);
+            RenderTextButtonAllowed(opensans, {10, 180}, 60, 3, (saveFile) ? ("Continue Night " + std::to_string(save)) : "Continue", (">Continue Night " + std::to_string(save)), ContinueNight, bContinue, saveFile);
             RenderTextButton(opensans, {10, 240}, 60, 3, "New Game", ">New Game", NewGame, bNewGame);
             RenderTextButton(opensans, {10, 300}, 60, 3, "Quit", ">Quit", Quit, bQuitGame);
         }
@@ -262,6 +279,7 @@ void UpdateUI()
         if(togglingCam == false && !dead && power > 0)
         {
             usingCam = !usingCam;
+            SetVectorSoundVolume("ambience", (usingCam) ? 0.15f : 0.3f, masterVolume, sounds);
         }
         togglingCam = true;
     }
@@ -308,11 +326,44 @@ void AIMove(int newLocation)
         staticLevel = 255;
 
     location = newLocation;
-    moveCooldown = 60;
+
+    if(night >= 5)
+        moveCooldown = 90;
+    else
+        moveCooldown = 180;
+
+    if(!dead)
+    {
+        float volume;
+        std::string sound = "steps";
+
+        if(newLocation == 2)
+            volume = 0.3f;
+
+        if(newLocation == 3 || newLocation == 1)
+            volume = 0.5f;
+
+        if(newLocation == 0 || newLocation == 4)
+            volume = 0.8f;
+
+        if(newLocation == 7)
+            sound = "vent";
+
+        if(newLocation == 6 || newLocation == 8)
+            sound = "door";
+
+        if(sound == "steps")
+            PlaySoundFromVector(sound, volume * ((usingCam) ? 1.0f : 0.5f), masterVolume, sounds);
+        else
+            PlaySoundFromVector(sound, 1.0f, masterVolume, sounds);
+    }
 }
 
 void AIAttack()
 {
+    if(!PlayingSound("bang", sounds) && !dead)
+        PlaySoundFromVector("bang", 1.0f, masterVolume, sounds);
+
     if(location == 6 && doorL == true)
         return;
     if(location == 7 && doorC == true)
@@ -470,6 +521,9 @@ void Update()
 {
     Vector2 mp = MousePositionStandard();
 
+    if(!dead && !PlayingSound("ambience", sounds))
+        PlaySoundFromVectorDontSet("ambience", sounds);
+
     if(IsKeyPressed(KEY_GRAVE))
         debugMenu = !debugMenu;
 
@@ -501,16 +555,31 @@ void Update()
             staticLevel = 128;
     }
 
-    if(frames % 30 == 0 && frames != 0 && !dead)
+    if(frames % 300 == 0 && frames != 0 && !dead)
     {
         if(gameTime > 0)
             gameTime -= 10;
+    }
+
+    if(frames % 300 == 0 && frames != 0 && !dead)
+    {
+        // if(gameTime > 0)
+        //     gameTime -= 10;
 
         if(gameTime == 0)
         {
             dead = true;
             deathTimer = 0;
-            nightsBeaten++;
+            
+            if(night == nightsBeaten + 1)
+                nightsBeaten++;
+
+            save++;
+            if(save > 6)
+                save = 6;
+
+            SaveGameToFile("save.txt", nightsBeaten, save);
+            saveFile = true;
         }
     }
 
@@ -587,26 +656,26 @@ void RenderStaticEntities()
 void RenderDoors()
 {
     // DrawRectangle(160 + lookAngle - 300, doorLHeight - 500, 150, 600, GRAY);
-    DrawSpriteFromVector("sidedoor", {160 + (float)lookAngle - 300, (float)doorLHeight - 500}, {-150, 600}, sprites);
+    DrawSpriteFromVectorTint("sidedoor", {160 + (float)lookAngle - 300, (float)doorLHeight - 500}, {-150, 600}, sprites, globalTint);
     // DrawRectangle(980 + lookAngle + 300, doorRHeight - 500, 150, 600, GRAY);
-    DrawSpriteFromVector("sidedoor", {980 + (float)lookAngle + 300, (float)doorRHeight - 500}, {150, 600}, sprites);
+    DrawSpriteFromVectorTint("sidedoor", {980 + (float)lookAngle + 300, (float)doorRHeight - 500}, {150, 600}, sprites, globalTint);
     // DrawRectangle(470 + lookAngle, doorCHeight - 150, 350, 250, GRAY);
-    DrawSpriteFromVector("centerdoor", {470 + (float)lookAngle, (float)doorCHeight - 150}, {350, 250}, sprites);
+    DrawSpriteFromVectorTint("centerdoor", {470 + (float)lookAngle, (float)doorCHeight - 150}, {350, 250}, sprites, globalTint);
 }
 
 void RenderEnemyOffice()
 {
     if(location == 6)
     {
-        DrawSpriteFromVector("stand", {160 + (float)lookAngle - 300, 200}, {150, 500}, sprites);
+        DrawSpriteFromVectorTint("stand", {160 + (float)lookAngle - 300, 200}, {150, 500}, sprites, globalTint);
     }
     else if(location == 8)
     {
-        DrawSpriteFromVector("stand", {980 + (float)lookAngle + 300, 200}, {-150, 500}, sprites);
+        DrawSpriteFromVectorTint("stand", {980 + (float)lookAngle + 300, 200}, {-150, 500}, sprites, globalTint);
     }
     else if(location == 7)
     {
-        DrawSpriteFromVector("scare", {560 + (float)lookAngle, 150}, {150, 200}, sprites);
+        DrawSpriteFromVectorTint("scare", {560 + (float)lookAngle, 150}, {150, 200}, sprites, globalTint);
     }
 }
 
@@ -663,6 +732,7 @@ void NextNight()
 void QuitToTitle()
 {
     mainMenu = true;
+    globalTint = WHITE;
 }
 
 void Render()
@@ -675,13 +745,20 @@ void Render()
             if(!usingCam)
             {
     
-                DrawSpriteFromVector((power > 0) ? "hall" : "halldark", {float(-320) + lookAngle, -200}, {1920, 1080}, sprites);
+                if(night < 6)
+                    DrawSpriteFromVector((power > 0) ? "hall" : "halldark", {float(-320) + lookAngle, -200}, {1920, 1080}, sprites);
+                else
+                    DrawSpriteFromVector("halldark", {float(-320) + lookAngle, -200}, {1920, 1080}, sprites);
     
                 if(!dead)
                     RenderEnemyOffice();
     
                 RenderDoors();
-                DrawAnimFromVector((power > 0) ? "office" : "officedark", {float(-320) + lookAngle, -200}, {1920, 1080}, anims, sprites, 255);
+
+                if(night < 6)
+                    DrawAnimFromVector((power > 0) ? "office" : "officedark", {float(-320) + lookAngle, -200}, {1920, 1080}, anims, sprites, 255);
+                else
+                    DrawAnimFromVector("officedark", {float(-320) + lookAngle, -200}, {1920, 1080}, anims, sprites, 255);
                 
                 //door buttons
                 if(power > 0)
@@ -718,7 +795,7 @@ void Render()
                 DrawAnimFromVector("noise", {0, 0}, {1280, 720}, anims, sprites, staticLevel);
             }
     
-            DrawSpriteFromVector("attack", {380 + (float)(5 * sin(frames * jumpscare)), 720 - (20 * (float)jumpscare)}, {600, 600}, sprites);
+            DrawSpriteFromVectorTint("attack", {380 + (float)(5 * sin(frames * jumpscare)), 720 - (20 * (float)jumpscare)}, {600, 600}, sprites, globalTint);
         }
 
         if(deathTimer <= 255)

@@ -164,7 +164,7 @@ Anim* GetAnimFromVector(std::string id, std::vector<Anim>& anims)
 void DrawSpriteFromVector(std::string id, Vector2 position, Vector2 size, std::vector<Sprite> sprites)
 {
     if(id == "")
-    return;
+        return;
     
     Sprite s = GetSpriteFromVector(id, sprites);
     
@@ -172,6 +172,19 @@ void DrawSpriteFromVector(std::string id, Vector2 position, Vector2 size, std::v
     Rectangle dest = {position.x, position.y, size.x, size.y};
     
     DrawTexturePro(s.img, src, dest, {0, 0}, 0, WHITE);
+}
+
+void DrawSpriteFromVectorTint(std::string id, Vector2 position, Vector2 size, std::vector<Sprite> sprites, Color tint)
+{
+    if(id == "")
+        return;
+    
+    Sprite s = GetSpriteFromVector(id, sprites);
+    
+    Rectangle src = {0, 0, (float)((size.x < 0) ? -s.width : s.width), (float)((size.y < 0) ? -s.height : s.height)};
+    Rectangle dest = {position.x, position.y, size.x, size.y};
+    
+    DrawTexturePro(s.img, src, dest, {0, 0}, 0, tint);
 }
 
 void DrawSpriteFromVectorAlpha(std::string id, Vector2 position, Vector2 size, std::vector<Sprite> sprites, unsigned char opacity)

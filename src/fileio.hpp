@@ -72,6 +72,35 @@ Entity DeserializeEntity(std::string entityString)
     return entity;
 }
 
+void SaveGameToFile(std::string filename, int nightsBeaten, int saveNight)
+{
+    std::ofstream file(filename);
+
+    if(!file.is_open())
+        return;
+
+    file << saveNight << std::endl;
+    file << nightsBeaten << std::endl;
+
+    file.close();
+}
+
+bool LoadGameFromFile(std::string filename, int &nightsBeaten, int &saveNight)
+{
+    std::ifstream file(filename);
+
+    if(!file)
+        return false;
+
+    file >> saveNight;
+    file >> nightsBeaten;
+
+    if(saveNight > 6)
+        saveNight = 6;
+
+    return true;
+}
+
 std::string SerializeEntity(Entity entity)
 {
     return std::format("{},{},{},{},{};", entity.type, entity.pos.x, entity.pos.y, entity.size.x, entity.size.y);

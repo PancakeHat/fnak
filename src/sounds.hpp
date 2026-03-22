@@ -32,8 +32,33 @@ GameSound GetSoundFromVector(std::string id, std::vector<GameSound> sounds)
             return s;
         }
     }
-
+    
     return {NULL, NULL};
+}
+
+bool PlayingSound(std::string id, std::vector<GameSound> &sounds)
+{
+    return IsSoundPlaying(GetSoundFromVector(id, sounds).sound);
+}
+
+// Plays a GameSound with a volume (0.0f - 1.0f)
+void PlaySoundFromVector(std::string id, float volume, float masterVolume, std::vector<GameSound> sounds)
+{
+    Sound s = GetSoundFromVector(id, sounds).sound;
+    SetSoundVolume(s, volume * masterVolume);
+    PlaySound(s);
+}
+
+void PlaySoundFromVectorDontSet(std::string id, std::vector<GameSound> sounds)
+{
+    Sound s = GetSoundFromVector(id, sounds).sound;
+    PlaySound(s);
+}
+
+void SetVectorSoundVolume(std::string id, float volume, float masterVolume, std::vector<GameSound> sounds)
+{
+    Sound s = GetSoundFromVector(id, sounds).sound;
+    SetSoundVolume(s, volume * masterVolume);
 }
 
 void LoadSoundToVector(std::string fileName, std::string id, std::vector<GameSound>& sounds, ErrorHandler& eh)
@@ -53,6 +78,39 @@ void LoadSoundToVector(std::string fileName, std::string id, std::vector<GameSou
     sound.sound = i;
 
     sounds.push_back(sound);
+}
+
+void LoadSoundsFromDirMinimal(std::string assetDir, std::vector<GameSound>& sounds, ErrorHandler& eh)
+{
+    // make path look pretty
+    std::replace( assetDir.begin(), assetDir.end(), '\\', '/');
+
+    if(!std::filesystem::exists(std::filesystem::path(assetDir)))
+    {
+        ThrowNewError(std::format("Can't find sound directory {}", assetDir), ERROR_FATAL, false, eh);
+        std::cerr << "FATAL: NO SOUND DIR\n";
+        return;
+    }
+
+    sounds.clear();
+
+    // make a list of all default sprites
+    for(const auto & entry : std::filesystem::directory_iterator(assetDir))
+    {
+        std::string s = entry.path().string();
+        std::replace( s.begin(), s.end(), '\\', '/');
+        if(StringEndsIn(s, ".wav"))
+        {
+            std::string id = s;
+            id.erase(id.begin(), id.begin() + 9);
+            id = RemoveFileEnding(id);
+            id.erase(id.begin(), id.begin() + 7);
+            
+            LoadSoundToVector(s, id, sounds, eh);
+
+            std::cout << "GAME: Registered sound " << id << "\n";
+        }
+    }
 }
 
 void LoadSoundsFromDir(std::string assetDir, std::vector<GameSound>& sounds, ErrorHandler& eh)
