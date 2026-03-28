@@ -16,10 +16,10 @@ if(WIN32)
     add_definitions(-D_THREAD_SAFE)
     
     # DEBUG BINARY
-    add_executable(fnak src/main.cpp fnak.rc ${IMGUISOURCES})
+    # add_executable(fnak src/main.cpp fnak.rc ${IMGUISOURCES})
 
     # RELEASE BINARY
-    # add_executable(fnak WIN32 src/main.cpp fnak.rc ${IMGUISOURCES})
+    add_executable(fnak WIN32 src/main.cpp fnak.rc ${IMGUISOURCES})
 
 else()
     add_executable(fnak src/main.cpp ${IMGUISOURCES})
