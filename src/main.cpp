@@ -13,7 +13,6 @@
 #include <stdlib.h>
 #include "fileio.hpp"
 #include "errors.hpp"
-#include "menu.hpp"
 #include "mouse.hpp"
 #include "ui.hpp"
 
@@ -86,15 +85,22 @@ bool bContinue = false;
 bool bNewGame = false;
 bool bQuitGame = false;
 bool bBack, bNight1, bNight2, bNight3, bNight4, bNight5, bNightmare = false;
+bool bSettings = false;
+bool settings = false;
+bool bVUp, bVDown, bToggleFullscreen = true;
+
+bool bPauseQuit, bResume = false;
 
 int nightsBeaten = 0;
 bool mainMenu = true;
 bool choosingNight = false;
 int save = 1;
 bool saveFile = false;
+bool fullscreen = false;
 
 int tx, ty, th, tw = 0;
 
+bool paused = false;
 int frames = 0;
 bool gameRunning = true;
 
@@ -102,6 +108,7 @@ void Update();
 void Render();
 void MainMenu();
 void LoadingScreen();
+void PauseMenu();
 
 int main()
 {
@@ -125,6 +132,11 @@ int main()
     
     opensans = LoadFont("./assets/fonts/opensans.ttf");
 
+    saveFile = LoadGameFromFile("save.txt", nightsBeaten, save, fullscreen, masterVolume);
+
+    if(fullscreen)
+        ToggleFullscreen();
+
     LoadingScreen();
     
     LoadSpritesFromDirMinimal("./assets/", sprites, errors);
@@ -142,7 +154,6 @@ int main()
     staticEntities.push_back({ 0, {1754, 298}, {34, 62}, 0, {0, 0}, &staticEntities[0].pos });
     staticEntities.push_back({ 0, {1754, 374}, {34, 62}, 0, {0, 0}, &staticEntities[0].pos });
 
-    saveFile = LoadGameFromFile("save.txt", nightsBeaten, save);
 
     SetVectorSoundVolume("ambience", (usingCam) ? 0.15f : 0.3f, masterVolume, sounds);
 
@@ -150,8 +161,21 @@ int main()
     {
         if(!mainMenu)
         {
-            Update();
-            Render();
+            if(IsKeyPressed(KEY_ESCAPE))
+            {
+                paused = !paused;
+                SetVectorSoundVolume("ambience", (paused || power <= 0) ? 0.0f : 0.3f, masterVolume, sounds);
+            }
+
+            if(!paused)
+            {
+                Update();
+                Render();
+            }
+            else
+            {
+                PauseMenu();
+            }
         }
         else
         {
@@ -207,12 +231,17 @@ void StartNight(int newNight)
     location = 2;
     mainMenu = false;
     save = newNight;
+    paused = false;
     
-    SaveGameToFile("save.txt", nightsBeaten, save);
+    SaveGameToFile("save.txt", nightsBeaten, save, fullscreen, masterVolume);
     saveFile = true;
+
+    SetVectorSoundVolume("ambience", 0.3f, masterVolume, sounds);
     
     if(night == 6)
-    globalTint = { 70, 70, 100, 255 };
+    {
+        globalTint = { 70, 70, 100, 255 };
+    }
 }
 
 void ContinueNight()
@@ -223,6 +252,7 @@ void ContinueNight()
 void ChooseNightBack()
 {
     choosingNight = false;
+    settings = false;
 }
 
 void NewGame()
@@ -235,6 +265,40 @@ void Quit()
     gameRunning = false;
 }
 
+void Settings()
+{
+    settings = true;
+}
+
+void VolumeUp()
+{
+    masterVolume += 0.05f;
+    SaveGameToFile("save.txt", nightsBeaten, save, fullscreen, masterVolume);
+
+    if(masterVolume > 1.0f)
+        masterVolume = 1.0f;
+    else if(masterVolume < 0.0f)
+        masterVolume = 0.0f;
+}
+
+void VolumeDown()
+{
+    masterVolume -= 0.05f;
+    SaveGameToFile("save.txt", nightsBeaten, save, fullscreen, masterVolume);
+
+    if(masterVolume > 1.0f)
+        masterVolume = 1.0f;
+    else if(masterVolume < 0.0f)
+        masterVolume = 0.0f;
+}
+
+void ToggleFullscreenSetting()
+{
+    fullscreen = !fullscreen;
+    ToggleFullscreen();
+    SaveGameToFile("save.txt", nightsBeaten, save, fullscreen, masterVolume);
+}
+
 void MainMenu()
 {
     BeginTextureMode(screen);
@@ -242,28 +306,72 @@ void MainMenu()
 
         DrawAnimFromVector("noise", {0, 0}, {1280, 720}, anims, sprites, 128);
 
-        if(choosingNight == false)
+        if(choosingNight == false && settings == false)
         {
             DrawTextEx(opensans, "Five Nights", {10, 10}, 70, 3, WHITE);
             DrawTextEx(opensans, "at Korniluk's", {10, 75}, 70, 3, WHITE);
     
-            RenderTextButtonAllowed(opensans, {10, 180}, 60, 3, (saveFile) ? ("Continue Night " + std::to_string(save)) : "Continue", (">Continue Night " + std::to_string(save)), ContinueNight, bContinue, saveFile);
-            RenderTextButton(opensans, {10, 240}, 60, 3, "New Game", ">New Game", NewGame, bNewGame);
-            RenderTextButton(opensans, {10, 300}, 60, 3, "Quit", ">Quit", Quit, bQuitGame);
+            RenderTextButtonAllowed(opensans, {10, 180}, 60, 3, (saveFile) ? ("Continue Night " + std::to_string(save)) : "Continue", (">Continue Night " + std::to_string(save)), ContinueNight, bContinue, saveFile, sounds, masterVolume);
+            RenderTextButton(opensans, {10, 240}, 60, 3, "New Game", ">New Game", NewGame, bNewGame, sounds, masterVolume);
+            RenderTextButton(opensans, {10, 300}, 60, 3, "Settings", ">Settings", Settings, bSettings, sounds, masterVolume);
+            RenderTextButton(opensans, {10, 360}, 60, 3, "Quit", ">Quit", Quit, bQuitGame, sounds, masterVolume);
+
+            DrawSpriteFromVectorAlpha("title", {920, 280}, {400, 550}, sprites, 130);
         }
-        else
+        else if(choosingNight)
         {
             DrawTextEx(opensans, "Choose Night", {10, 10}, 70, 3, WHITE);
     
-            RenderTextButton(opensans, {10, 180}, 60, 3, "Back", ">Back", ChooseNightBack, bBack);
-            RenderTextButtonAllowed1i(opensans, {10, 240}, 60, 3, "Night 1", ">Night 1", StartNight, 1, bNight1, true);
-            RenderTextButtonAllowed1i(opensans, {10, 300}, 60, 3, "Night 2", ">Night 2", StartNight, 2, bNight2, (nightsBeaten > 0));
-            RenderTextButtonAllowed1i(opensans, {10, 360}, 60, 3, "Night 3", ">Night 3", StartNight, 3, bNight3, (nightsBeaten > 1));
-            RenderTextButtonAllowed1i(opensans, {10, 420}, 60, 3, "Night 4", ">Night 4", StartNight, 4, bNight4, (nightsBeaten > 2));
-            RenderTextButtonAllowed1i(opensans, {10, 480}, 60, 3, "Night 5", ">Night 5", StartNight, 5, bNight5, (nightsBeaten > 3));
-            RenderTextButtonAllowed1i(opensans, {10, 540}, 60, 3, "Nightmare", ">Nightmare", StartNight, 6, bNightmare, (nightsBeaten > 4));
+            RenderTextButton(opensans, {10, 180}, 60, 3, "Back", ">Back", ChooseNightBack, bBack, sounds, masterVolume);
+            RenderTextButtonAllowed1i(opensans, {10, 240}, 60, 3, "Night 1", ">Night 1", StartNight, 1, bNight1, true, sounds, masterVolume);
+            RenderTextButtonAllowed1i(opensans, {10, 300}, 60, 3, "Night 2", ">Night 2", StartNight, 2, bNight2, (nightsBeaten > 0), sounds, masterVolume);
+            RenderTextButtonAllowed1i(opensans, {10, 360}, 60, 3, "Night 3", ">Night 3", StartNight, 3, bNight3, (nightsBeaten > 1), sounds, masterVolume);
+            RenderTextButtonAllowed1i(opensans, {10, 420}, 60, 3, "Night 4", ">Night 4", StartNight, 4, bNight4, (nightsBeaten > 2), sounds, masterVolume);
+            RenderTextButtonAllowed1i(opensans, {10, 480}, 60, 3, "Night 5", ">Night 5", StartNight, 5, bNight5, (nightsBeaten > 3), sounds, masterVolume);
+            RenderTextButtonAllowed1i(opensans, {10, 540}, 60, 3, "Nightmare", ">Nightmare", StartNight, 6, bNightmare, (nightsBeaten > 4), sounds, masterVolume);
+        }
+        else if(settings)
+        {
+            DrawTextEx(opensans, "Settings", {10, 10}, 70, 3, WHITE);
+    
+            RenderTextButton(opensans, {10, 180}, 60, 3, "Back", ">Back", ChooseNightBack, bBack, sounds, masterVolume);
+            RenderTextButton(opensans, {10, 240}, 60, 3, " - ", "[-]", VolumeDown, bVDown, sounds, masterVolume);
+            DrawTextEx(opensans, std::format("Volume: {:.0f}%", (masterVolume * 100)).c_str(), {70, 240}, 60, 3, WHITE);
+            RenderTextButton(opensans, {395, 240}, 60, 3, " + ", "[+]", VolumeUp, bVUp, sounds, masterVolume);
+            RenderTextButton(opensans, {10, 300}, 60, 3, "Toggle Fullscreen", ">Toggle Fullscreen", ToggleFullscreenSetting, bToggleFullscreen, sounds, masterVolume);
         }
 
+    EndTextureMode();
+
+    BeginDrawing();
+        ClearBackground(BLACK);
+        DrawSpriteDirect(screen.texture, {0, 0}, {(float)GetScreenWidth(), (float)GetScreenHeight()});
+    EndDrawing();
+}
+
+void QuitToTitle()
+{
+    mainMenu = true;
+    globalTint = WHITE;
+    paused = false;
+}
+
+void Resume()
+{
+    paused = false;
+    if(power >= 0)
+        SetVectorSoundVolume("ambience", 0.3f, masterVolume, sounds);
+}
+
+void PauseMenu()
+{
+    BeginTextureMode(screen);
+        ClearBackground(BLACK);
+        DrawAnimFromVector("noise", {0, 0}, {1280, 720}, anims, sprites, 128);
+
+        DrawCenteredText("Paused", opensans, { 640, 330 }, 100, 3, WHITE);
+        RenderTextButtonCentered(opensans, {640, 450}, 60, 3, "Resume", ">Resume", Resume, bResume, sounds, masterVolume);
+        RenderTextButtonCentered(opensans, {640, 510}, 60, 3, "Quit to Title", ">Quit to Title", QuitToTitle, bPauseQuit, sounds, masterVolume);
     EndTextureMode();
 
     BeginDrawing();
@@ -280,6 +388,7 @@ void UpdateUI()
         {
             usingCam = !usingCam;
             SetVectorSoundVolume("ambience", (usingCam) ? 0.15f : 0.3f, masterVolume, sounds);
+            PlaySoundFromVector("cam", 0.4f, masterVolume, sounds);
         }
         togglingCam = true;
     }
@@ -304,11 +413,11 @@ void UpdateUI()
     }
 
     // camera selector slop
-    if(checkBoxCollison(MousePositionStandard(), {1, 1}, {1098, 661}, {29, 31}) && IsMouseButtonPressed(0)) { camRoom = 0; staticLevel = 230; }
-    if(checkBoxCollison(MousePositionStandard(), {1, 1}, {1096, 617}, {65, 28}) && IsMouseButtonPressed(0)) { camRoom = 1; staticLevel = 230; }
-    if(checkBoxCollison(MousePositionStandard(), {1, 1}, {1096, 540}, {86, 60}) && IsMouseButtonPressed(0)) { camRoom = 2; staticLevel = 230; }
-    if(checkBoxCollison(MousePositionStandard(), {1, 1}, {1218, 556}, {32, 44}) && IsMouseButtonPressed(0)) { camRoom = 3; staticLevel = 230; }
-    if(checkBoxCollison(MousePositionStandard(), {1, 1}, {1218, 626}, {32, 67}) && IsMouseButtonPressed(0)) { camRoom = 4; staticLevel = 230; }
+    if(checkBoxCollison(MousePositionStandard(), {1, 1}, {1098, 661}, {29, 31}) && IsMouseButtonPressed(0)) { camRoom = 0; staticLevel = 230; PlaySoundFromVector("click", 0.5f, masterVolume, sounds); }
+    if(checkBoxCollison(MousePositionStandard(), {1, 1}, {1096, 617}, {65, 28}) && IsMouseButtonPressed(0)) { camRoom = 1; staticLevel = 230; PlaySoundFromVector("click", 0.5f, masterVolume, sounds); }
+    if(checkBoxCollison(MousePositionStandard(), {1, 1}, {1096, 540}, {86, 60}) && IsMouseButtonPressed(0)) { camRoom = 2; staticLevel = 230; PlaySoundFromVector("click", 0.5f, masterVolume, sounds); }
+    if(checkBoxCollison(MousePositionStandard(), {1, 1}, {1218, 556}, {32, 44}) && IsMouseButtonPressed(0)) { camRoom = 3; staticLevel = 230; PlaySoundFromVector("click", 0.5f, masterVolume, sounds); }
+    if(checkBoxCollison(MousePositionStandard(), {1, 1}, {1218, 626}, {32, 67}) && IsMouseButtonPressed(0)) { camRoom = 4; staticLevel = 230; PlaySoundFromVector("click", 0.5f, masterVolume, sounds); }
 }
 
 void AIMove(int newLocation)
@@ -364,15 +473,23 @@ void AIAttack()
     if(!PlayingSound("bang", sounds) && !dead)
         PlaySoundFromVector("bang", 1.0f, masterVolume, sounds);
 
-    if(location == 6 && doorL == true)
-        return;
-    if(location == 7 && doorC == true)
-        return;
-    if(location == 8 && doorR == true)
-        return;
+    if(power >= 0)
+    {
+        if(location == 6 && doorL == true)
+            return;
+        if(location == 7 && doorC == true)
+            return;
+        if(location == 8 && doorR == true)
+            return;
+    
+    }
 
+    if(!dead)
+        PlaySoundFromVector("jumpscare", 0.8f, masterVolume, sounds);
+        
     dead = true;
     usingCam = false;
+    SetVectorSoundVolume("ambience", 0.0f, masterVolume, sounds);
 }
 
 void UpdateAI()
@@ -570,6 +687,7 @@ void Update()
         {
             dead = true;
             deathTimer = 0;
+            SetVectorSoundVolume("ambience", 0.0f, masterVolume, sounds);
             
             if(night == nightsBeaten + 1)
                 nightsBeaten++;
@@ -578,7 +696,7 @@ void Update()
             if(save > 6)
                 save = 6;
 
-            SaveGameToFile("save.txt", nightsBeaten, save);
+            SaveGameToFile("save.txt", nightsBeaten, save, fullscreen, masterVolume);
             saveFile = true;
         }
     }
@@ -589,13 +707,13 @@ void Update()
         if(power > 0)
         {
             if(usingCam)
-                power--;
+                power -= 2;
             if(doorL)
-                power--;
+                power -= 5;
             if(doorC)
-                power--;
+                power -= 5;
             if(doorR)
-                power--;
+                power -= 5;
     
             power--;
     
@@ -606,6 +724,11 @@ void Update()
                 doorC = false;
                 doorR = false;
                 usingCam = false;
+                attackWindup = 600;
+                location = 7;
+                globalTint = { 70, 70, 100, 255 };
+                SetVectorSoundVolume("ambience", 0.0f, masterVolume, sounds);
+                PlaySoundFromVector("shutdown", 0.7f, masterVolume, sounds);
             }
         }
     }
@@ -616,12 +739,12 @@ void Update()
     // door buttons
     if(!usingCam && power > 0 && !dead)
     {
-        if(MouseClickingEntity(staticEntities[1])) { doorL = false; }
-        if(MouseClickingEntity(staticEntities[2])) { doorL = true; }
-        if(MouseClickingEntity(staticEntities[3])) { doorC = false; }
-        if(MouseClickingEntity(staticEntities[4])) { doorC = true; }
-        if(MouseClickingEntity(staticEntities[5])) { doorR = false; }
-        if(MouseClickingEntity(staticEntities[6])) { doorR = true; }
+        if(MouseClickingEntity(staticEntities[1])) { doorL = false; PlaySoundFromVector("powerdoor", 0.5f, masterVolume, sounds); }
+        if(MouseClickingEntity(staticEntities[2])) { doorL = true; PlaySoundFromVector("powerdoor", 0.5f, masterVolume, sounds); }
+        if(MouseClickingEntity(staticEntities[3])) { doorC = false; PlaySoundFromVector("powerdoor", 0.5f, masterVolume, sounds); }
+        if(MouseClickingEntity(staticEntities[4])) { doorC = true; PlaySoundFromVector("powerdoor", 0.5f, masterVolume, sounds); }
+        if(MouseClickingEntity(staticEntities[5])) { doorR = false; PlaySoundFromVector("powerdoor", 0.5f, masterVolume, sounds); }
+        if(MouseClickingEntity(staticEntities[6])) { doorR = true; PlaySoundFromVector("powerdoor", 0.5f, masterVolume, sounds); }
     }
 
     // door animations
@@ -729,12 +852,6 @@ void NextNight()
     StartNight(night + 1);
 }
 
-void QuitToTitle()
-{
-    mainMenu = true;
-    globalTint = WHITE;
-}
-
 void Render()
 {
     BeginTextureMode(screen);
@@ -809,11 +926,11 @@ void Render()
                 DrawCenteredText("6:00 AM", opensans, { 640, 330 }, 100, 3, WHITE);
 
             if(gameTime > 0)
-                RenderTextButtonCentered(opensans, {640, 450}, 60, 3, "Retry Night", ">Retry Night", RetryNight, bRetry);
+                RenderTextButtonCentered(opensans, {640, 450}, 60, 3, "Retry Night", ">Retry Night", RetryNight, bRetry, sounds, masterVolume);
             else if(gameTime <= 0 && night < 5)
-                RenderTextButtonCentered(opensans, {640, 450}, 60, 3, "Next Night", ">Next Night", NextNight, bNextNight);
+                RenderTextButtonCentered(opensans, {640, 450}, 60, 3, "Next Night", ">Next Night", NextNight, bNextNight, sounds, masterVolume);
 
-            RenderTextButtonCentered(opensans, {640, 510}, 60, 3, "Quit to Title", ">Quit to Title", QuitToTitle, bQuitToTitle);
+            RenderTextButtonCentered(opensans, {640, 510}, 60, 3, "Quit to Title", ">Quit to Title", QuitToTitle, bQuitToTitle, sounds, masterVolume);
         }
         
         if(debugMenu)

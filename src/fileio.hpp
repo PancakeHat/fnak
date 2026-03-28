@@ -72,7 +72,7 @@ Entity DeserializeEntity(std::string entityString)
     return entity;
 }
 
-void SaveGameToFile(std::string filename, int nightsBeaten, int saveNight)
+void SaveGameToFile(std::string filename, int nightsBeaten, int saveNight, bool fullscreen, float master)
 {
     std::ofstream file(filename);
 
@@ -81,11 +81,13 @@ void SaveGameToFile(std::string filename, int nightsBeaten, int saveNight)
 
     file << saveNight << std::endl;
     file << nightsBeaten << std::endl;
+    file << fullscreen << std::endl;
+    file << master << std::endl;
 
     file.close();
 }
 
-bool LoadGameFromFile(std::string filename, int &nightsBeaten, int &saveNight)
+bool LoadGameFromFile(std::string filename, int &nightsBeaten, int &saveNight, bool& fullscreen, float& master)
 {
     std::ifstream file(filename);
 
@@ -94,6 +96,8 @@ bool LoadGameFromFile(std::string filename, int &nightsBeaten, int &saveNight)
 
     file >> saveNight;
     file >> nightsBeaten;
+    file >> fullscreen;
+    file >> master;
 
     if(saveNight > 6)
         saveNight = 6;

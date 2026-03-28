@@ -3,10 +3,11 @@
 #include "graphics.hpp"
 #include "mouse.hpp"
 #include "maps.hpp"
+#include "sounds.hpp"
 
 #pragma once
 
-void RenderTextButton(Font font, Vector2 position, float size, float spacing, std::string inactiveText, std::string activeText, void (*onClick)(), bool& active)
+void RenderTextButton(Font font, Vector2 position, float size, float spacing, std::string inactiveText, std::string activeText, void (*onClick)(), bool& active, std::vector<GameSound>& sounds, float masterVolume)
 {
     DrawTextEx(font, (active) ? activeText.c_str() : inactiveText.c_str(), position, size, spacing, WHITE);
 
@@ -15,6 +16,9 @@ void RenderTextButton(Font font, Vector2 position, float size, float spacing, st
     
     if(checkBoxCollison(m, {1, 1}, position, s))
     {
+        if(!active)
+            PlaySoundFromVector("click", 0.5f, masterVolume, sounds);
+
         active = true;
 
         if(IsMouseButtonPressed(0))
@@ -26,7 +30,7 @@ void RenderTextButton(Font font, Vector2 position, float size, float spacing, st
         active = false;
 }
 
-void RenderTextButtonAllowed(Font font, Vector2 position, float size, float spacing, std::string inactiveText, std::string activeText, void (*onClick)(), bool& active, bool allowed)
+void RenderTextButtonAllowed(Font font, Vector2 position, float size, float spacing, std::string inactiveText, std::string activeText, void (*onClick)(), bool& active, bool allowed, std::vector<GameSound>& sounds, float masterVolume)
 {
     DrawTextEx(font, (active) ? activeText.c_str() : inactiveText.c_str(), position, size, spacing, (allowed) ? WHITE : GRAY);
 
@@ -37,6 +41,9 @@ void RenderTextButtonAllowed(Font font, Vector2 position, float size, float spac
         
         if(checkBoxCollison(m, {1, 1}, position, s))
         {
+            if(!active)
+                PlaySoundFromVector("click", 0.5f, masterVolume, sounds);
+
             active = true;
     
             if(IsMouseButtonPressed(0))
@@ -49,7 +56,7 @@ void RenderTextButtonAllowed(Font font, Vector2 position, float size, float spac
     }
 }
 
-void RenderTextButtonAllowed1i(Font font, Vector2 position, float size, float spacing, std::string inactiveText, std::string activeText, void (*onClick)(int), int arg, bool& active, bool allowed)
+void RenderTextButtonAllowed1i(Font font, Vector2 position, float size, float spacing, std::string inactiveText, std::string activeText, void (*onClick)(int), int arg, bool& active, bool allowed, std::vector<GameSound>& sounds, float masterVolume)
 {
     DrawTextEx(font, (active) ? activeText.c_str() : inactiveText.c_str(), position, size, spacing, (allowed) ? WHITE : GRAY);
 
@@ -60,6 +67,9 @@ void RenderTextButtonAllowed1i(Font font, Vector2 position, float size, float sp
         
         if(checkBoxCollison(m, {1, 1}, position, s))
         {
+            if(!active)
+                PlaySoundFromVector("click", 0.5f, masterVolume, sounds);
+
             active = true;
     
             if(IsMouseButtonPressed(0))
@@ -72,7 +82,7 @@ void RenderTextButtonAllowed1i(Font font, Vector2 position, float size, float sp
     }
 }
 
-void RenderTextButtonCentered(Font font, Vector2 position, float size, float spacing, std::string inactiveText, std::string activeText, void (*onClick)(), bool& active)
+void RenderTextButtonCentered(Font font, Vector2 position, float size, float spacing, std::string inactiveText, std::string activeText, void (*onClick)(), bool& active, std::vector<GameSound>& sounds, float masterVolume)
 {
     Vector2 s = MeasureTextEx(font, (active) ? activeText.c_str() : inactiveText.c_str(), size, spacing);
 
@@ -82,6 +92,9 @@ void RenderTextButtonCentered(Font font, Vector2 position, float size, float spa
     
     if(checkBoxCollison(m, {1, 1}, {position.x - s.x / 2, position.y - s.y / 2}, s))
     {
+        if(!active)
+            PlaySoundFromVector("click", 0.5f, masterVolume, sounds);
+
         active = true;
 
         if(IsMouseButtonPressed(0))

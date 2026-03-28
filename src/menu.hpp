@@ -28,8 +28,8 @@ void RenderButtons(std::vector<Button> buttons);
 void QuitGame();
 void OpenModMenu();
 void ModMenu();
-void PauseMenu(bool& paused, bool& mainMenu, GameSound clickSound);
-void Resume();
+// void PauseMenu(bool& paused, bool& mainMenu, GameSound clickSound);
+// void Resume();
 void ReturnToMenu();
 void OpenMapEditor();
 void ToggleTimer();
@@ -67,31 +67,31 @@ std::vector<std::string> packNames;
 
 Vector2 menuMousePosition;
 
-void MenuInit(bool menuOpen, std::vector<Pack>& packs)
-{
-    uiFont = LoadFontEx("./assets/fonts/retro.ttf", 2048, 0, 0);
-    titleFont = LoadFontEx("./assets/fonts/wonder.ttf", 900, 0, 0);
+// void MenuInit(bool menuOpen, std::vector<Pack>& packs)
+// {
+//     uiFont = LoadFontEx("./assets/fonts/retro.ttf", 2048, 0, 0);
+//     titleFont = LoadFontEx("./assets/fonts/wonder.ttf", 900, 0, 0);
 
-    std::cout << "MENU: Starting menu\n";
-    menuOpenSync = menuOpen;
-    menuScreen = LoadRenderTexture(800, 600);
+//     std::cout << "MENU: Starting menu\n";
+//     menuOpenSync = menuOpen;
+//     menuScreen = LoadRenderTexture(800, 600);
 
-    buttons.push_back(Button{{20, 120}, {230, 50}, 40, "Play", StartGame});
-    buttons.push_back(Button{{20, 180}, {230, 50}, 40, "Mods", OpenModMenu});
-    buttons.push_back(Button{{20, 240}, {230, 50}, 40, "Editor", OpenMapEditor});
-    buttons.push_back(Button{{20, 300}, {230, 50}, 40, "Timer Off", ToggleTimer});
-    buttons.push_back(Button{{20, 360}, {230, 50}, 40, "Quit", QuitGame});
+//     buttons.push_back(Button{{20, 120}, {230, 50}, 40, "Play", StartGame});
+//     buttons.push_back(Button{{20, 180}, {230, 50}, 40, "Mods", OpenModMenu});
+//     buttons.push_back(Button{{20, 240}, {230, 50}, 40, "Editor", OpenMapEditor});
+//     buttons.push_back(Button{{20, 300}, {230, 50}, 40, "Timer Off", ToggleTimer});
+//     buttons.push_back(Button{{20, 360}, {230, 50}, 40, "Quit", QuitGame});
 
-    pauseButtons.push_back(Button{{20, 85}, {180, 40}, 30, "Resume", Resume});
-    pauseButtons.push_back(Button{{20, 135}, {180, 40}, 30, "Main Menu", ReturnToMenu});
+//     pauseButtons.push_back(Button{{20, 85}, {180, 40}, 30, "Resume", Resume});
+//     pauseButtons.push_back(Button{{20, 135}, {180, 40}, 30, "Main Menu", ReturnToMenu});
 
-    packNames.clear();
+//     packNames.clear();
 
-    for(Pack p : packs)
-    {
-        packNames.push_back(p.name);
-    }
-}
+//     for(Pack p : packs)
+//     {
+//         packNames.push_back(p.name);
+//     }
+// }
 
 int MainMenu(bool& menuOpen, bool& forceQuit, std::vector<Sprite>& sprites, std::vector<Sprite>& backgrounds, GameSound clickSound, bool& inMapEditor, bool& speedrunTimer)
 {
@@ -136,10 +136,10 @@ int MainMenu(bool& menuOpen, bool& forceQuit, std::vector<Sprite>& sprites, std:
     return 0;
 }
 
-void Resume()
-{
-    pauseMenuSync = false;
-}
+// void Resume()
+// {
+//     pauseMenuSync = false;
+// }
 
 void ReturnToMenu()
 {
@@ -147,18 +147,18 @@ void ReturnToMenu()
     pauseMenuSync = false;
 }
 
-void PauseMenu(bool& paused, bool& mainMenu, GameSound clickSound)
-{
-    menuMousePosition = {800 * (GetMousePosition().x / GetScreenWidth()), 600 * (GetMousePosition().y / GetScreenHeight())};
+// void PauseMenu(bool& paused, bool& mainMenu, GameSound clickSound)
+// {
+//     menuMousePosition = {800 * (GetMousePosition().x / GetScreenWidth()), 600 * (GetMousePosition().y / GetScreenHeight())};
 
-    paused = pauseMenuSync;
-    mainMenu = menuOpenSync;
+//     paused = pauseMenuSync;
+//     mainMenu = menuOpenSync;
 
-    UpdateButtons(pauseButtons, clickSound);
-    DrawRectangle(0, 0, 800, 600, {0, 0, 0, 80});
-    DrawOutlinedTextEx("Paused", 24, 20, 50, titleTextColor, 4, titleTextOutlineColor, titleFont, 4);
-    RenderButtons(pauseButtons);
-}
+//     UpdateButtons(pauseButtons, clickSound);
+//     DrawRectangle(0, 0, 800, 600, {0, 0, 0, 80});
+//     DrawOutlinedTextEx("Paused", 24, 20, 50, titleTextColor, 4, titleTextOutlineColor, titleFont, 4);
+//     RenderButtons(pauseButtons);
+// }
 
 void OpenMapEditor()
 {
