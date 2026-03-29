@@ -14,24 +14,25 @@ This project is slop. The code is slop, the assets are slop, the mechanics are s
 **Prerequisites:**
 - [CMake](https://cmake.org/)
 - A CMake supported build program, e.g. [Make](https://gnuwin32.sourceforge.net/packages/make.htm) or [Ninja](https://ninja-build.org/)
-- A C/C++ Compiler like [MinGW-w64](https://www.mingw-w64.org/) (Windows only)
+- A C/C++ 20 compatible Compiler like [MinGW-w64](https://www.mingw-w64.org/) (Windows only)
 
 **Build Support:**
-- Windows: Yup
-- MacOS: Maybe
-- Linux: No (at least not yet, there's some library problems)
+- Windows: Yes
+- MacOS: Maybe (Untested)
+- Linux: Yes (only tested on Debian)
 
 **Linux Note**
-- libstdc++6 from GCC 13 or higher is needed
-- GCC 13 or higher is needed
+- GCC 13 or higher is needed. **Make sure CMake is using GCC 13**
 
 **Finally Building:**
 *(Steps shown are for Windows)*
-1. Create and enter build folder
-`mkdir build`
-`cd build`
-2. CMake stuff
+1. Create and enter build folder:  
+`mkdir build`  
+`cd build`  
+2. CMake stuff:  
 `cmake ..` (add `-G "MinGW Makefiles"` for Make build)
-3. Compile
+3. Compile:  
 `ninja` or `make` depending on what build system you used
-4. Done. The exectuable should be ready
+5. Copy over the asset folder into the build directory:  
+`cp -r ../assets ./assets`  
+4. Done. The exectuable should be ready.

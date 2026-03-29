@@ -358,8 +358,8 @@ void VolumeUp()
 
     SetVectorSoundVolume("title", 0.5f, masterVolume, sounds);
 
-    if(masterVolume > 1.0f)
-        masterVolume = 1.0f;
+    if(masterVolume > 1.20f)
+        masterVolume = 1.20f;
     else if(masterVolume < 0.0f)
         masterVolume = 0.0f;
 }
@@ -371,8 +371,8 @@ void VolumeDown()
 
     SetVectorSoundVolume("title", 0.5f, masterVolume, sounds);
 
-    if(masterVolume > 1.0f)
-        masterVolume = 1.0f;
+    if(masterVolume > 1.20f)
+        masterVolume = 1.20f;
     else if(masterVolume < 0.0f)
         masterVolume = 0.0f;
 }
