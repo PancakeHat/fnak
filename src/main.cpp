@@ -100,6 +100,9 @@ bool fullscreen = false;
 
 int tx, ty, th, tw = 0;
 
+int introTimer = 300;
+bool bSkipIntro = false;
+
 bool paused = false;
 int frames = 0;
 bool gameRunning = true;
@@ -109,6 +112,7 @@ void Render();
 void MainMenu();
 void LoadingScreen();
 void PauseMenu();
+void Intro();
 
 int main()
 {
@@ -161,7 +165,7 @@ int main()
     {
         if(!mainMenu)
         {
-            if(IsKeyPressed(KEY_ESCAPE))
+            if(IsKeyPressed(KEY_ESCAPE) && introTimer <= 0)
             {
                 paused = !paused;
                 SetVectorSoundVolume("ambience", (paused || power <= 0) ? 0.0f : 0.3f, masterVolume, sounds);
@@ -174,7 +178,10 @@ int main()
             }
             else
             {
-                PauseMenu();
+                if(introTimer <= 0)
+                    PauseMenu();
+                else
+                    Intro();
             }
         }
         else
@@ -231,7 +238,17 @@ void StartNight(int newNight)
     location = 2;
     mainMenu = false;
     save = newNight;
-    paused = false;
+
+    if(newNight > 1)
+    {
+        paused = false;
+        introTimer = 0;
+    }
+    else
+    {
+        paused = true;
+        introTimer = 300;
+    }
     
     SaveGameToFile("save.txt", nightsBeaten, save, fullscreen, masterVolume);
     saveFile = true;
@@ -242,6 +259,45 @@ void StartNight(int newNight)
     {
         globalTint = { 70, 70, 100, 255 };
     }
+}
+
+void SkipIntro()
+{
+    paused = false;
+    introTimer = 0;
+}
+
+void Intro()
+{
+    if(introTimer > 1)
+        introTimer--;
+    else if (introTimer == 1)
+    {
+        paused = false;
+        introTimer--;
+    }
+
+    int opacity = 255;
+    if(introTimer >= 215 && introTimer <= 300)
+        opacity -= ((introTimer - 215) * 3);
+
+    if(introTimer >= 0 && introTimer <= 85)
+        opacity -= (255 - (introTimer * 3));
+
+    BeginTextureMode(screen);
+        ClearBackground(BLACK);
+
+        DrawSpriteFromVectorAlpha("intro", {0, 0}, {1280, 720}, sprites, opacity);
+
+        DrawAnimFromVector("noise", {0, 0}, {1280, 720}, anims, sprites, 100);
+
+        RenderTextButton(opensans, {10, 670}, 40, 3, "Skip", ">Skip", SkipIntro, bSkipIntro, sounds, masterVolume);
+    EndTextureMode();
+
+    BeginDrawing();
+        ClearBackground(BLACK);
+        DrawSpriteDirect(screen.texture, {0, 0}, {(float)GetScreenWidth(), (float)GetScreenHeight()});
+    EndDrawing();
 }
 
 void ContinueNight()
@@ -354,6 +410,7 @@ void QuitToTitle()
     mainMenu = true;
     globalTint = WHITE;
     paused = false;
+    SetVectorSoundVolume("clock", 0.0f, masterVolume, sounds);
 }
 
 void Resume()
@@ -688,6 +745,7 @@ void Update()
             dead = true;
             deathTimer = 0;
             SetVectorSoundVolume("ambience", 0.0f, masterVolume, sounds);
+            PlaySoundFromVector("clock", 0.7f, masterVolume, sounds);
             
             if(night == nightsBeaten + 1)
                 nightsBeaten++;
@@ -966,6 +1024,8 @@ void Render()
                 ImGui::Text(std::format("Move Cooldown: {}", moveCooldown).c_str());
                 ImGui::Text(std::format("Attack Windup: {}", attackWindup).c_str());
                 ImGui::Text(std::format("Night: {}", night).c_str());
+                ImGui::Text(std::format("Paused: {}", paused).c_str());
+                ImGui::Text(std::format("Intro Timer: {}", introTimer).c_str());
 
                 // ImGui::SliderInt("X", &tx, 0, 1280);
                 // ImGui::SliderInt("Y", &ty, 0, 720);
