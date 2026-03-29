@@ -149,7 +149,7 @@ int main()
 
     staticEntities.reserve(7);
     staticEntities.push_back({ 0, {0, 0}, {0, 0}, 0, {0, 0}, nullptr });
-
+    
     // Camera Buttons
     staticEntities.push_back({ 0, {128, 298}, {36, 64}, 0, {0, 0}, &staticEntities[0].pos });
     staticEntities.push_back({ 0, {128, 373}, {36, 64}, 0, {0, 0}, &staticEntities[0].pos });
@@ -158,7 +158,7 @@ int main()
     staticEntities.push_back({ 0, {1754, 298}, {34, 62}, 0, {0, 0}, &staticEntities[0].pos });
     staticEntities.push_back({ 0, {1754, 374}, {34, 62}, 0, {0, 0}, &staticEntities[0].pos });
 
-
+    SetVectorSoundVolume("title", 0.5f, masterVolume, sounds);
     SetVectorSoundVolume("ambience", (usingCam) ? 0.15f : 0.3f, masterVolume, sounds);
 
     while(!WindowShouldClose() && gameRunning)
@@ -243,11 +243,13 @@ void StartNight(int newNight)
     {
         paused = false;
         introTimer = 0;
+        SetVectorSoundVolume("title", 0.0f, masterVolume, sounds);
     }
     else
     {
         paused = true;
         introTimer = 300;
+        SetVectorSoundVolume("title", 0.5f, masterVolume, sounds);
     }
     
     SaveGameToFile("save.txt", nightsBeaten, save, fullscreen, masterVolume);
@@ -265,16 +267,21 @@ void SkipIntro()
 {
     paused = false;
     introTimer = 0;
+    SetVectorSoundVolume("title", 0.0f, masterVolume, sounds);
 }
 
 void Intro()
 {
+    if(!PlayingSound("title", sounds))
+        PlaySoundFromVectorDontSet("title", sounds);
+
     if(introTimer > 1)
         introTimer--;
     else if (introTimer == 1)
     {
         paused = false;
         introTimer--;
+        SetVectorSoundVolume("title", 0.0f, masterVolume, sounds);
     }
 
     int opacity = 255;
@@ -282,7 +289,10 @@ void Intro()
         opacity -= ((introTimer - 215) * 3);
 
     if(introTimer >= 0 && introTimer <= 85)
+    {
         opacity -= (255 - (introTimer * 3));
+        SetVectorSoundVolume("title", (0.00588f * introTimer), masterVolume, sounds);
+    }
 
     BeginTextureMode(screen);
         ClearBackground(BLACK);
@@ -331,6 +341,8 @@ void VolumeUp()
     masterVolume += 0.05f;
     SaveGameToFile("save.txt", nightsBeaten, save, fullscreen, masterVolume);
 
+    SetVectorSoundVolume("title", 0.5f, masterVolume, sounds);
+
     if(masterVolume > 1.0f)
         masterVolume = 1.0f;
     else if(masterVolume < 0.0f)
@@ -341,6 +353,8 @@ void VolumeDown()
 {
     masterVolume -= 0.05f;
     SaveGameToFile("save.txt", nightsBeaten, save, fullscreen, masterVolume);
+
+    SetVectorSoundVolume("title", 0.5f, masterVolume, sounds);
 
     if(masterVolume > 1.0f)
         masterVolume = 1.0f;
@@ -357,6 +371,9 @@ void ToggleFullscreenSetting()
 
 void MainMenu()
 {
+    if(!PlayingSound("title", sounds))
+        PlaySoundFromVectorDontSet("title", sounds);
+
     BeginTextureMode(screen);
         ClearBackground(BLACK);
 
@@ -411,6 +428,7 @@ void QuitToTitle()
     globalTint = WHITE;
     paused = false;
     SetVectorSoundVolume("clock", 0.0f, masterVolume, sounds);
+    SetVectorSoundVolume("title", 0.5f, masterVolume, sounds);
 }
 
 void Resume()
