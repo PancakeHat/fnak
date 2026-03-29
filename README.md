@@ -21,6 +21,10 @@ This project is slop. The code is slop, the assets are slop, the mechanics are s
 - MacOS: Maybe
 - Linux: No (at least not yet, there's some library problems)
 
+**Linux Note**
+- libstdc++6 from GCC 13 or higher is needed
+- GCC 13 or higher is needed
+
 **Finally Building:**
 *(Steps shown are for Windows)*
 1. Create and enter build folder

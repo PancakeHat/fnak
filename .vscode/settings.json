@@ -67,5 +67,6 @@
         "optional": "cpp",
         "sstream": "cpp",
         "regex": "cpp"
-    }
+    },
+    "C_Cpp.default.compilerPath": "/usr/bin/g++"
 }

@@ -114,14 +114,29 @@ void LoadingScreen();
 void PauseMenu();
 void Intro();
 
+// int main() {
+//     InitWindow(800, 600, "test");
+//     std::cout << "TEST\n";
+
+//     while (!WindowShouldClose()) {
+//         BeginDrawing();
+//         ClearBackground(BLACK);
+//         EndDrawing();
+//     }
+
+//     CloseWindow();
+// }
+
 int main()
 {
-    ForceErrorHandlerOverride(true, errors);
+    // ForceErrorHandlerOverride(true, errors);
     std::cout << "GAME: Starting game\n";
     SetTraceLogLevel(TraceLogLevel::LOG_ERROR);
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+    std::cout << "TEST\n";
     InitWindow(SCREENWIDTH, SCREENHEIGHT, "Five Nights at Korniluk's");
+    std::cout << "TEST2\n";
     InitAudioDevice();
     SetTargetFPS(60);
 
@@ -409,7 +424,8 @@ void MainMenu()
     
             RenderTextButton(opensans, {10, 180}, 60, 3, "Back", ">Back", ChooseNightBack, bBack, sounds, masterVolume);
             RenderTextButton(opensans, {10, 240}, 60, 3, " - ", "[-]", VolumeDown, bVDown, sounds, masterVolume);
-            DrawTextEx(opensans, std::format("Volume: {:.0f}%", (masterVolume * 100)).c_str(), {70, 240}, 60, 3, WHITE);
+            // DrawTextEx(opensans, std::format("Volume: {:.0f}%", (masterVolume * 100)).c_str(), {70, 240}, 60, 3, WHITE);
+            DrawTextEx(opensans, std::format("Volume: {}%", (masterVolume * 100)).c_str(), {70, 240}, 60, 3, WHITE);
             RenderTextButton(opensans, {395, 240}, 60, 3, " + ", "[+]", VolumeUp, bVUp, sounds, masterVolume);
             RenderTextButton(opensans, {10, 300}, 60, 3, "Toggle Fullscreen", ">Toggle Fullscreen", ToggleFullscreenSetting, bToggleFullscreen, sounds, masterVolume);
         }
@@ -893,7 +909,8 @@ void RenderUI()
         DrawTextEx(opensans, std::format("{}%", power).c_str(), {130, 645}, 50, 2, WHITE);
         
         // timeslop
-        DrawTextEx(opensans, std::format("{:02d}:{:02d}", ((gameTime > 300) ? 12 : (int)(6 - ceil(gameTime / 60)) - ((gameTime % 60 == 0) ? 0 : 1)), ((gameTime % 60 == 0) ? 0 : (60 - (int)(gameTime % 60)))).c_str(), {10, 10}, 50, 2, WHITE);
+        // DrawTextEx(opensans, std::format("{:02d}:{:02d}", ((gameTime > 300) ? 12 : (int)(6 - ceil(gameTime / 60)) - ((gameTime % 60 == 0) ? 0 : 1)), ((gameTime % 60 == 0) ? 0 : (60 - (int)(gameTime % 60)))).c_str(), {10, 10}, 50, 2, WHITE);
+        DrawTextEx(opensans, std::format("{}:{}", ((gameTime > 300) ? 12 : (int)(6 - ceil(gameTime / 60)) - ((gameTime % 60 == 0) ? 0 : 1)), ((gameTime % 60 == 0) ? 0 : (60 - (int)(gameTime % 60)))).c_str(), {10, 10}, 50, 2, WHITE);
     
         DrawSpriteFromVector("cam", {280, 620}, {720, (float)((usingCam) ? -100 : 100)}, sprites);
     

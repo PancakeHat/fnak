@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.13)
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_COLOR_DIAGNOSTICS true)
 
@@ -9,6 +10,7 @@ project(app)
 file(GLOB IMGUISOURCES
     ${CMAKE_SOURCE_DIR}/include/rlimgui/*.cpp
 )
+
 
 # Set up executable
 if(WIN32)
@@ -28,6 +30,31 @@ endif()
 # Include directories
 include_directories(${CMAKE_SOURCE_DIR}/include/)
 include_directories(${CMAKE_SOURCE_DIR}/include/rlimgui)
+
+# Linux setup
+if(LINUX)
+    target_compile_options(fnak PRIVATE
+        "-std=c++20"
+    )
+
+    # include_directories(${CMAKE_SOURCE_DIR}/include/linux)
+
+    find_package(OpenGL REQUIRED)
+
+    add_library(raylib STATIC IMPORTED)
+    set_target_properties(raylib PROPERTIES
+        IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/lib/linux/libraylib.a"
+    )
+
+    # add_library(libstd STATIC IMPORTED)
+    # set_target_properties(libstd PROPERTIES
+    #     IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/lib/linux/libstdc++.a"
+    # )
+
+    target_link_libraries(fnak PRIVATE raylib OpenGL::GL m pthread dl rt X11)
+    target_link_options(fnak PRIVATE -static-libstdc++ -static-libgcc)
+    # target_link_libraries(fnak PRIVATE libstd)
+endif()
 
 # Link with MacOS libraries
 if(APPLE)
