@@ -37,23 +37,13 @@ if(LINUX)
         "-std=c++20"
     )
 
-    # include_directories(${CMAKE_SOURCE_DIR}/include/linux)
-
-    find_package(OpenGL REQUIRED)
-
     add_library(raylib STATIC IMPORTED)
     set_target_properties(raylib PROPERTIES
         IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/lib/linux/libraylib.a"
     )
 
-    # add_library(libstd STATIC IMPORTED)
-    # set_target_properties(libstd PROPERTIES
-    #     IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/lib/linux/libstdc++.a"
-    # )
-
-    target_link_libraries(fnak PRIVATE raylib OpenGL::GL m pthread dl rt X11)
+    target_link_libraries(fnak PRIVATE raylib GL m pthread dl rt X11)
     target_link_options(fnak PRIVATE -static-libstdc++ -static-libgcc)
-    # target_link_libraries(fnak PRIVATE libstd)
 endif()
 
 # Link with MacOS libraries
